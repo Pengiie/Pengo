@@ -1,0 +1,26 @@
+# Using EBNF to define context free grammar
+# Implied whitespace between any terminal or nonterminal where apparent
+
+statement = expression | function_declaration;
+
+function_declaration = function_declarator, body;
+function_declarator = type_specifier, identifier, '(', parameters, ')';
+parameters = parameter, (',', parameter)*;
+parameter = type_specifier, identifier;
+
+type_specifier = 'void' | 'int' | 'bool' | 'float' | 'string' | identifier;
+
+body = '{', statement* ,'}';
+
+expression = grouping | term | factor | unary | call | literal;
+grouping = '(', expression, ')';
+
+term = expression, ('+', '-'), expression;
+factor = expression, ('*' | '/'), expression;
+unary = ('-' | '!'), expression;
+call = primary, '(', expression, (',', expression)*, ')';
+
+primary = identifier | grouping | literal;
+literal = NUMBER | STRING | 'true' | 'false';
+
+identifier = (ALPHANUMERIC)+;
