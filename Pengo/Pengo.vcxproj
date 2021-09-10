@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Collapse.cpp" />
+    <ClCompile Include="src\Function.cpp" />
     <ClCompile Include="src\Interpreter.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\tokenizer\Tokenizer.cpp" />
@@ -153,7 +154,10 @@
     <ClInclude Include="src\Collapse.h" />
     <ClInclude Include="src\ast\Expression.h" />
     <ClInclude Include="src\ast\Value.h" />
+    <ClInclude Include="src\Environment.h" />
+    <ClInclude Include="src\Function.h" />
     <ClInclude Include="src\Interpreter.h" />
+    <ClInclude Include="src\IterableStack.h" />
     <ClInclude Include="src\parser\Parser.h" />
     <ClInclude Include="src\tokenizer\Token.h" />
     <ClInclude Include="src\tokenizer\Tokenizer.h" />

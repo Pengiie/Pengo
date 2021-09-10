@@ -48,8 +48,8 @@ struct Production
 
 	bool operator== (const Production& other) const
 	{
-		return lhs == other.lhs && 
-			rhs.size() == other.rhs.size() && 
+		return lhs == other.lhs &&
+			rhs.size() == other.rhs.size() &&
 			std::equal(rhs.begin(), rhs.end(), other.rhs.begin());
 	}
 };
@@ -62,7 +62,7 @@ struct TrackedProduction
 
 	bool isAtEnd() const
 	{
-		return pointer >= (int) production.rhs.size();
+		return pointer >= (int)production.rhs.size();
 	}
 
 	const Symbol nextSymbol() const
@@ -93,7 +93,7 @@ struct ItemSet
 		{
 			Production& prod = tProd.production;
 			std::cout << prod.lhs.symbol << " -> ";
-			for (int i = 0; i < (int) prod.rhs.size(); i++)
+			for (int i = 0; i < (int)prod.rhs.size(); i++)
 			{
 				if (tProd.pointer == i)
 					std::cout << "%";
@@ -108,11 +108,11 @@ struct ItemSet
 			}
 			std::cout << " { ";
 			for (Symbol symbol : tProd.lookAhead)
-			{				
-				std::cout << symbol.symbol  << " ";
+			{
+				std::cout << symbol.symbol << " ";
 			}
 			std::cout << "}" << std::endl;
-			
+
 		}
 	}
 };
@@ -128,7 +128,7 @@ public:
 	}
 
 	const Symbol& getStart() const { return m_start; }
-	const std::vector<Production>& getProductions() const { return m_productions;  }
+	const std::vector<Production>& getProductions() const { return m_productions; }
 private:
 	const Symbol m_start;
 	std::vector<Production> m_productions;
@@ -147,7 +147,7 @@ public:
 	void generateTables()
 	{
 		Grammar augmentedGrammar = m_grammar;
-		Symbol augmentedStart = { std::string(m_grammar.getStart().symbol) + "'", SymbolType::NONTERMINAL, false};
+		Symbol augmentedStart = { std::string(m_grammar.getStart().symbol) + "'", SymbolType::NONTERMINAL, false };
 		m_augmentedProduction = { augmentedStart, {m_grammar.getStart()} };
 		augmentedGrammar.addProduction(m_augmentedProduction);
 
@@ -171,12 +171,12 @@ public:
 		}
 		for (ItemSet& set : m_itemSets)
 			deriveLookAheads(set);
-		
+
 		// Create reductions actions and accept actions where applicable
 		defineActions();
 		generateTypes();
 
-		for (ItemSet& set : m_itemSets) 
+		for (ItemSet& set : m_itemSets)
 		{
 			set.print();
 			std::cout << std::endl;
@@ -191,7 +191,7 @@ public:
 		std::fstream headerFile, sourceFile;
 		headerFile.open(headerFileName, std::fstream::out);
 		sourceFile.open(sourceFileName, std::fstream::out);
-		
+
 		if (headerFile.is_open())
 		{
 			std::string contents =
@@ -285,7 +285,7 @@ public:
 				Production p = m_grammar.getProductions()[i];
 				bool terminates = true;
 				int nonTerminals = 0;
-				for(const Symbol& symbol: p.rhs)
+				for (const Symbol& symbol : p.rhs)
 					if (symbol.type == SymbolType::NONTERMINAL)
 					{
 						terminates = false;
@@ -294,8 +294,8 @@ public:
 				// mak eif you add a new token to a set and it adds onto the set it removes the links if it was changed because the new lookaheads were new
 				contents.append("		m_grammar[").append(std::to_string(i)).append("] = { NodeType::").append(p.lhs.symbol).
 					append(", ").append(std::to_string(p.rhs.size())).append(", ").
-						append(std::to_string(nonTerminals)).append(", ").
-						append(terminates ? "true" : "false").append(" };\n");
+					append(std::to_string(nonTerminals)).append(", ").
+					append(terminates ? "true" : "false").append(" };\n");
 			}
 			contents.append(
 				"	}\n"
@@ -319,7 +319,7 @@ public:
 				"					std::cout << \"Unexpected end of file at line \" << current.line << \" at pos \" << current.pos << std::endl;\n"
 				"				else\n"
 				"					std::cout << \"Error parsing line \" << current.line << \" at pos \" << current.pos << std::endl;\n"
-				"				std::cin.get();\n"
+				"				exit(-2);\n"
 				"			}\n"
 				"			else if (nextAction.type == ActionType::Shift)\n"
 				"			{\n"
@@ -408,7 +408,7 @@ private:
 			return m_typeSubstitution[symbol];
 		return symbol;
 	}
-	
+
 	void defineActions()
 	{
 		for (ItemSet& set : m_itemSets)
@@ -437,33 +437,33 @@ private:
 				}
 			}
 		}
-/*
-		for (ItemSet set : m_itemSets)
-		{
-			if (set.next.empty())
-			{
-				if (set.productions.size() == 1)
+		/*
+				for (ItemSet set : m_itemSets)
 				{
-					if (set.productions[0].production == m_augmentedProduction)
+					if (set.next.empty())
 					{
-						for (Symbol lookAhead : set.productions[0].lookAhead)
-							m_action[set.setNumber][lookAhead.symbol] = "Accept";
-					}
-					else
-					{
-						for (int i = 0; i < (int)m_grammar.getProductions().size(); i++)
+						if (set.productions.size() == 1)
 						{
-							if (set.productions[0].production == (Production)m_grammar.getProductions()[i])
+							if (set.productions[0].production == m_augmentedProduction)
 							{
 								for (Symbol lookAhead : set.productions[0].lookAhead)
-									m_action[set.setNumber][lookAhead.symbol] = std::string("R") + std::to_string(i + 1);
-								break;
+									m_action[set.setNumber][lookAhead.symbol] = "Accept";
+							}
+							else
+							{
+								for (int i = 0; i < (int)m_grammar.getProductions().size(); i++)
+								{
+									if (set.productions[0].production == (Production)m_grammar.getProductions()[i])
+									{
+										for (Symbol lookAhead : set.productions[0].lookAhead)
+											m_action[set.setNumber][lookAhead.symbol] = std::string("R") + std::to_string(i + 1);
+										break;
+									}
+								}
 							}
 						}
 					}
-				}
-			}
-		}*/
+				}*/
 	}
 
 	void createSets(int setNum)
@@ -500,7 +500,7 @@ private:
 				if (dupSet.productions.size() == newSet.productions.size())
 				{
 					bool equal = true;
-					for (int i = 0; i < (int) newSet.productions.size(); i++)
+					for (int i = 0; i < (int)newSet.productions.size(); i++)
 					{
 						if (dupSet.productions[i].production == newSet.productions[i].production &&
 							dupSet.productions[i].pointer == newSet.productions[i].pointer)
@@ -510,7 +510,7 @@ private:
 					}
 					if (equal)
 					{
-						for (int i = 0; i < (int) newSet.productions.size(); i++)
+						for (int i = 0; i < (int)newSet.productions.size(); i++)
 						{
 							for (Symbol look : newSet.productions[i].lookAhead)
 								dupSet.productions[i].lookAhead.insert(look);
@@ -575,7 +575,7 @@ private:
 			{
 				if (start.pointer == prod.pointer && start.production == prod.production)
 				{
-					if(!prod.isAtEnd())
+					if (!prod.isAtEnd())
 						next.push(prod.production.rhs[prod.pointer]);
 				}
 			}
@@ -598,7 +598,7 @@ private:
 								// Finds the production to create look ahead closure for
 								bool hasAll = true;
 								// If look ahead of current token will be the end, just transfer all the look aheads of the current to the next
-								if(prod.pointer + 1 == prod.production.rhs.size())
+								if (prod.pointer + 1 == prod.production.rhs.size())
 									for (Symbol s : prod.lookAhead)
 									{
 										if (cursorProd.lookAhead.find(s) == cursorProd.lookAhead.end())
@@ -657,7 +657,7 @@ private:
 			{
 				m_lookAheadLinks[pair.second] = std::unordered_set<int>();
 			}
-			if(m_lookAheadLinks.find(set.setNumber) == m_lookAheadLinks.end())
+			if (m_lookAheadLinks.find(set.setNumber) == m_lookAheadLinks.end())
 				m_lookAheadLinks[set.setNumber] = std::unordered_set<int>();
 			m_lookAheadLinks[set.setNumber].insert(pair.second);
 			std::cout << set.setNumber << " -> " << pair.second << std::endl;
@@ -683,8 +683,9 @@ private:
 					{
 						if (prodRule.lhs == s)
 						{
-							if (checked.find(prodRule.rhs[0]) == checked.end())
-								aheadStack.push(prodRule.rhs[0]);
+							if(prodRule.rhs.size() > 0)
+								if (checked.find(prodRule.rhs[0]) == checked.end())
+									aheadStack.push(prodRule.rhs[0]);
 							//for (const Symbol& ss : prodRule.rhs)
 						//		if(checked.find(ss) == checked.end())
 							//		aheadStack.push(ss);
@@ -746,7 +747,7 @@ private:
 
 	void generateTypes()
 	{
-		for (const Production& production: m_grammar.getProductions())
+		for (const Production& production : m_grammar.getProductions())
 		{
 			m_expressions.insert(production.lhs.symbol);
 			for (const Symbol& symbol : production.rhs)
@@ -761,6 +762,7 @@ private:
 };
 
 #define PARSER_LOCATION "C:/Dev/cpp/Pengo/Pengo/src/parser/"
+//#define PARSER_LOCATION "/"
 
 int main()
 {
@@ -769,11 +771,14 @@ int main()
 	# Implied whitespace between any terminal or nonterminal where apparent
 
 	file = statements;
-	statements = statements statement ';' | statement ';' ;
+	statements = statements block | block;
 
 	statement = printStatement | varDeclare | expression;
 	printStatement = 'print' expression;
 	varDeclare = 'var' 'Identifier' '=' expression;
+
+	block = '{' statements '}';
+	block = statement, ';';
 
 	expression = term;
 
@@ -787,29 +792,46 @@ int main()
 	unaryOp = -;
 	unaryOp = !;
 
-	primary = iden | grouping | literal | call;
+	call -> primary, '(', arguments, ')';
+	call -> primary;
+	arguments = ;
+	arguments = expression, argRecurse;
+	argRecurse = ',', expression, argRecurse;
+	argRecurse = ;
+
+	primary = identifier | grouping | literal | call;
 
 	grouping = '(', expression, ')';
-	call = primary, '(', expression, (',', expression)*, ')';
 	literal = NUMBER | STRING | 'true' | 'false';
 
-	iden = IDENTIFIER
+	identifier = IDENTIFIER
 	*/
 
 	Symbol file = { "File", SymbolType::NONTERMINAL, true };
 	Symbol statements = { "Statements", SymbolType::NONTERMINAL, true };
 
 	Symbol statement = { "Statement", SymbolType::NONTERMINAL, true };
-	Symbol printStatement = { "PrintStatement", SymbolType::NONTERMINAL, true };
+
+	Symbol block = { "Block", SymbolType::NONTERMINAL, true };
+
+	//Symbol printStatement = { "PrintStatement", SymbolType::NONTERMINAL, true };
 	Symbol varDeclareStatement = { "VarDeclareStatement", SymbolType::NONTERMINAL, true };
 
 	Symbol expression = { "Expression", SymbolType::NONTERMINAL, true };
+
 	Symbol term = { "Term", SymbolType::NONTERMINAL, true };
 	Symbol termOp = { "TermOp", SymbolType::NONTERMINAL, true };
+
 	Symbol factor = { "Factor", SymbolType::NONTERMINAL, true };
 	Symbol factorOp = { "FactorOp", SymbolType::NONTERMINAL, true };
+
 	Symbol unary = { "Unary", SymbolType::NONTERMINAL, true };
 	Symbol unaryOp = { "UnaryOp", SymbolType::NONTERMINAL, true };
+
+	Symbol call = { "Call", SymbolType::NONTERMINAL, true };
+	Symbol arguments = { "Arguments", SymbolType::NONTERMINAL, true };
+	Symbol argRecurse = { "ArgRecurse", SymbolType::NONTERMINAL, true };
+
 	Symbol primary = { "Primary", SymbolType::NONTERMINAL, true };
 	Symbol grouping = { "Grouping", SymbolType::NONTERMINAL, true };
 	Symbol identifier = { "Identifier", SymbolType::NONTERMINAL, true };
@@ -817,29 +839,40 @@ int main()
 
 	Grammar langGrammar(file);
 	langGrammar.addProduction({ file, {statements} });
-	langGrammar.addProduction({ statements, {statements, statement, {";"}}});
-	langGrammar.addProduction({ statements, {statement, {";"}}});
+	langGrammar.addProduction({ statements, {statements, block} });
+	langGrammar.addProduction({ statements, {block} });
+
+	langGrammar.addProduction({ block, {{"{"}, statements, {"}"}} });
+	langGrammar.addProduction({ block, {statement, {";"}} });
 
 	langGrammar.addProduction({ statement, {expression} });
-	langGrammar.addProduction({ statement, {printStatement} });
+	//langGrammar.addProduction({ statement, {printStatement} });
 	langGrammar.addProduction({ statement, {varDeclareStatement} });
 
-	langGrammar.addProduction({ printStatement, {{"Print"}, expression}});
-	langGrammar.addProduction({ varDeclareStatement, {{"Var"}, identifier, {"="}, expression}});
+	//langGrammar.addProduction({ printStatement, {{"Print"}, expression} });
+	langGrammar.addProduction({ varDeclareStatement, {identifier, {"="}, expression} });
 
 	langGrammar.addProduction({ expression, {term} });
 	langGrammar.addProduction({ term, {term, termOp, factor} });
 	langGrammar.addProduction({ term, {factor} });
 	langGrammar.addProduction({ termOp, {{"+"}} });
 	langGrammar.addProduction({ termOp, {{"-"}} });
-	langGrammar.addProduction({ factor, {factor, factorOp, primary} });
-	langGrammar.addProduction({ factor, {primary} });
+	langGrammar.addProduction({ factor, {factor, factorOp, call} });
+	langGrammar.addProduction({ factor, {call} });
 	langGrammar.addProduction({ factorOp, {{"*"}} });
 	langGrammar.addProduction({ factorOp, {{"/"}} });
 	//langGrammar.addProduction({ unary, {unaryOp, unary} });
 	//langGrammar.addProduction({ unary, {primary} });
 	//langGrammar.addProduction({ unaryOp, {{"-"}}});
 	//langGrammar.addProduction({ unaryOp, {{"!"}} });
+
+	langGrammar.addProduction({ call, {primary, {"("}, arguments, {")"}} });
+	langGrammar.addProduction({ call, {primary} });
+	langGrammar.addProduction({ arguments, {} });
+	langGrammar.addProduction({ arguments, {expression, argRecurse} });
+	langGrammar.addProduction({ argRecurse, {} });
+	langGrammar.addProduction({ argRecurse, {{","}, expression, argRecurse} });
+
 	langGrammar.addProduction({ primary, {identifier} });
 	langGrammar.addProduction({ primary, {grouping} });
 	langGrammar.addProduction({ primary, {lit} });
@@ -871,6 +904,9 @@ int main()
 	peg.addSubstitution(")", "RightParen");
 	peg.addSubstitution(";", "Semicolon");
 	peg.addSubstitution("=", "Equal");
+	peg.addSubstitution("{", "LeftCurly");
+	peg.addSubstitution("}", "RightCurly");
+	peg.addSubstitution(",", "Comma");
 	peg.generateTables();
 	std::cin.get();
 	peg.generateParser(PARSER_LOCATION);
@@ -975,5 +1011,5 @@ private:
 	Production m_grammar[GRAMMAR_NUM];
 	std::unordered_map<TokenType, Action> m_actionTable[SET_NUM];
 	std::unordered_map<TokenType, int> m_gotoTable[SET_NUM];
-};                                         
+};
 */

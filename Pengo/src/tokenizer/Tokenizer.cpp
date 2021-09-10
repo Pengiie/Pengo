@@ -4,8 +4,8 @@
 #include <unordered_map>
 
 const std::unordered_map<std::string, TokenType> keywords = {
-	{"print", TokenType::Print},
-	{"var", TokenType::Var}
+	//{"print", TokenType::Print},
+	//{"var", TokenType::Var}
 };
 
 Tokenizer::Tokenizer(const std::string& source) : m_source(source)
@@ -40,6 +40,9 @@ void Tokenizer::nextToken()
 	case '=': addToken(TokenType::Equal); break;
 	case '(': addToken(TokenType::LeftParen); break;
 	case ')': addToken(TokenType::RightParen); break;
+	case '{': addToken(TokenType::LeftCurly); break;
+	case '}': addToken(TokenType::RightCurly); break;
+	case ',': addToken(TokenType::Comma); break;
 	case ';': addToken(TokenType::Semicolon); break;
 	case '"': tokenizeString(); break;
 	default:

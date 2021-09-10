@@ -18,14 +18,18 @@ std::string getType(NodeType type)
 	{
 	case NodeType::File: return "File";
 	case NodeType::Statements: return "Statements";
+	case NodeType::Block: return "Block";
 	case NodeType::Statement: return "Statement";
-	case NodeType::PrintStatement: return "PrintStatement";
+	//case NodeType::PrintStatement: return "PrintStatement";
 	case NodeType::VarDeclareStatement: return "VarDeclareStatement";
 	case NodeType::Expression: return "Expression";
 	case NodeType::Term: return "Term";
 	case NodeType::TermOp: return "TermOp";
 	case NodeType::Factor: return "Factor";
 	case NodeType::FactorOp: return "FactorOp";
+	case NodeType::Call: return "Call";
+	case NodeType::Arguments: return "Arguments";
+	case NodeType::ArgRecurse: return "ArgRecurse";
 	case NodeType::Primary: return "Primary";
 	case NodeType::Literal: return "Literal";
 	case NodeType::Grouping: return "Grouping";

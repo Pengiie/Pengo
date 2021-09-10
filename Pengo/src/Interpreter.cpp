@@ -4,9 +4,23 @@
 #include <string>
 #include <variant>
 
+#include "Function.h"
+
 Interpreter::Interpreter(std::vector<std::unique_ptr<Statement>> statements)
 {
 	m_statements = std::move(statements);
+
+	m_functions[FUN_PRINT] = new Print();
+	m_functions[FUN_PRINTLN] = new PrintLn();
+	m_functions[FUN_INPUT] = new Input();
+	m_functions[FUN_TOINT] = new ToInt();
+	m_functions[FUN_RANDOM] = new Random();
+}
+
+Interpreter::~Interpreter()
+{
+	for (auto& func : m_functions)
+		delete func.second;
 }
 
 void Interpreter::interpret()
@@ -18,6 +32,14 @@ void Interpreter::interpret()
 Value Interpreter::evaluate(const std::unique_ptr<Expression>& expression)
 {
 	return expression->accept(*this);
+}
+
+void Interpreter::visitBlock(BlockStatement* statement)
+{
+	m_envStack.push({});
+	for (std::unique_ptr<Statement>& s : statement->statements)
+		s->accept(*this);
+	m_envStack.pop();
 }
 
 void Interpreter::visitExpression(ExpressionStatement* statement)
@@ -32,7 +54,19 @@ void Interpreter::visitPrint(PrintStatement* statement)
 
 void Interpreter::visitVarDeclare(VarDeclareStatement* statement)
 {
-	m_variables[statement->name.token] = evaluate(statement->exp);
+	if(m_envStack.empty())
+		m_globalEnvironment.m_variables[statement->name.token] = evaluate(statement->exp);
+	else
+		m_envStack.top().m_variables[statement->name.token] = evaluate(statement->exp);
+}
+
+Value Interpreter::visitCall(CallExpression* expression)
+{
+	Value function = evaluate(expression->callee);
+	std::vector<Value> values;
+	for (std::unique_ptr<Expression>& exp : expression->args)
+		values.push_back(evaluate(exp));
+	return std::get<Function*>(function.val)->call(*this, values);
 }
 
 Value Interpreter::visitBinary(BinaryExpression* expression)
@@ -90,16 +124,7 @@ Value Interpreter::visitLiteral(LiteralExpression* expression)
 Value Interpreter::visitVar(VarExpression* expression)
 {
 	Token& name = expression->name;
-	if (m_variables.find(name.token) != m_variables.end())
-	{
-		return m_variables[name.token];
-	}
-	else
-	{
-		std::cout << "Error at (" << name.line << ":" << name.pos << "):" << std::endl;
-		std::cout << "Variable " << name.token << " not defined" << std::endl;
-		std::cin.get();
-	}
+	return findVariable(name);
 }
 
 Value Interpreter::toString(const Value& value)
@@ -108,4 +133,23 @@ Value Interpreter::toString(const Value& value)
 		return value;
 	if (value.type == ValueType::Integer)
 		return { ValueType::String, std::to_string(std::get<int>(value.val)) };
+}
+
+Value Interpreter::findVariable(const Token& name)
+{
+	for(int i = m_envStack.size() - 1; i >= 0; i--)
+		if (m_envStack.begin()[i].hasVariable(name.token))
+			return m_envStack.begin()[i].getVariable(name);
+
+	if(m_globalEnvironment.hasVariable(name.token))
+		return m_globalEnvironment.getVariable(name);
+
+	if (m_functions.find(name.token) != m_functions.end())
+	{
+		Value val;
+		val.type = ValueType::Function;
+		val.val = m_functions.at(name.token);
+		return val;
+	}
+	return m_globalEnvironment.getVariable(name);
 }

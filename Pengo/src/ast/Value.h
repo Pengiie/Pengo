@@ -3,10 +3,15 @@
 #include <string>
 #include <variant>
 
+#include "../Function.h"
+
+#include <memory>
+
 enum class ValueType
 {
 	Integer,
 	String,
+	Function,
 	Null
 };
 
@@ -15,6 +20,7 @@ enum class ValueType
 struct Value
 {
 	ValueType type = ValueType::Null;
-	std::variant<int, std::string> val;
+	std::variant<int, std::string, 
+		Function*> val;
 };
 #pragma warning( pop )

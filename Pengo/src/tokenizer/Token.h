@@ -13,6 +13,9 @@ enum class TokenType
 
 	RightParen,
 	LeftParen,
+	RightCurly,
+	LeftCurly,
+	Comma,
 
 	Identifier,
 	String,
@@ -20,10 +23,6 @@ enum class TokenType
 	Bool,
 
 	Semicolon,
-
-	// Keywords
-	Print,
-	Var,
 
 	_EOF
 };
