@@ -782,6 +782,14 @@ int main()
 
 	expression = term;
 
+	logical = logical, logicalOp, conditional;
+	logical = conditiona;
+	logicalOp = '&&' | '||';
+
+	conditional = term, conditionalOp, term;
+	conditional = term;
+	conditionalOp = == | != | > | >= | < | <=;
+
 	term = term, termOp, factor | factor;
 	termOp = +;
 	termOp = -;
@@ -802,7 +810,7 @@ int main()
 	primary = identifier | grouping | literal | call;
 
 	grouping = '(', expression, ')';
-	literal = NUMBER | STRING | 'true' | 'false';
+	literal = NUMBER | STRING | BOOL;
 
 	identifier = IDENTIFIER
 	*/
@@ -815,9 +823,19 @@ int main()
 	Symbol block = { "Block", SymbolType::NONTERMINAL, true };
 
 	//Symbol printStatement = { "PrintStatement", SymbolType::NONTERMINAL, true };
+	Symbol whileStatement = { "WhileStatement", SymbolType::NONTERMINAL, true };
+	Symbol ifStatement = { "IfStatement", SymbolType::NONTERMINAL, true };
+	Symbol elseifStatement = { "ElseIfStatement", SymbolType::NONTERMINAL, true };
+	Symbol elseStatement = { "ElseStatement", SymbolType::NONTERMINAL, true };
 	Symbol varDeclareStatement = { "VarDeclareStatement", SymbolType::NONTERMINAL, true };
 
 	Symbol expression = { "Expression", SymbolType::NONTERMINAL, true };
+
+	Symbol logical = { "Logical", SymbolType::NONTERMINAL, true };
+	Symbol logicalOp = { "LogicalOp", SymbolType::NONTERMINAL, true };
+
+	Symbol conditional = { "Conditional", SymbolType::NONTERMINAL, true };
+	Symbol conditionalOp = { "ConditionalOp", SymbolType::NONTERMINAL, true };
 
 	Symbol term = { "Term", SymbolType::NONTERMINAL, true };
 	Symbol termOp = { "TermOp", SymbolType::NONTERMINAL, true };
@@ -844,6 +862,10 @@ int main()
 
 	langGrammar.addProduction({ block, {{"{"}, statements, {"}"}} });
 	langGrammar.addProduction({ block, {statement, {";"}} });
+	langGrammar.addProduction({ block, {ifStatement} });
+	langGrammar.addProduction({ block, {elseifStatement} });
+	langGrammar.addProduction({ block, {elseStatement} });
+	langGrammar.addProduction({ block, {whileStatement} });
 
 	langGrammar.addProduction({ statement, {expression} });
 	//langGrammar.addProduction({ statement, {printStatement} });
@@ -851,20 +873,41 @@ int main()
 
 	//langGrammar.addProduction({ printStatement, {{"Print"}, expression} });
 	langGrammar.addProduction({ varDeclareStatement, {identifier, {"="}, expression} });
+	langGrammar.addProduction({ whileStatement, {{"While"}, {"("}, expression, {")"}, block} });
+	langGrammar.addProduction({ ifStatement, {{"If"}, {"("}, expression, {")"}, block}});
+	langGrammar.addProduction({ elseifStatement, {{"ElseIf"}, {"("}, expression, {")"}, block} });
+	langGrammar.addProduction({ elseStatement, {{"Else"}, block} });
 
-	langGrammar.addProduction({ expression, {term} });
+	langGrammar.addProduction({ expression, {logical} });
+
+	langGrammar.addProduction({logical, {logical, logicalOp, conditional}});
+	langGrammar.addProduction({ logical, {conditional } });
+	langGrammar.addProduction({ logicalOp, {{"&&"}} });
+	langGrammar.addProduction({ logicalOp, {{"||"}} });
+
+	langGrammar.addProduction({ conditional, {term, conditionalOp, term} });
+	langGrammar.addProduction({ conditional, {term} });
+	langGrammar.addProduction({ conditionalOp, {{"=="}} });
+	langGrammar.addProduction({ conditionalOp, {{"!="}} });
+	langGrammar.addProduction({ conditionalOp, {{">"}} });
+	langGrammar.addProduction({ conditionalOp, {{">="}} });
+	langGrammar.addProduction({ conditionalOp, {{"<"}} });
+	langGrammar.addProduction({ conditionalOp, {{"<="}} });
+
 	langGrammar.addProduction({ term, {term, termOp, factor} });
 	langGrammar.addProduction({ term, {factor} });
 	langGrammar.addProduction({ termOp, {{"+"}} });
 	langGrammar.addProduction({ termOp, {{"-"}} });
-	langGrammar.addProduction({ factor, {factor, factorOp, call} });
-	langGrammar.addProduction({ factor, {call} });
+
+	langGrammar.addProduction({ factor, {factor, factorOp, unary} });
+	langGrammar.addProduction({ factor, {unary} });
 	langGrammar.addProduction({ factorOp, {{"*"}} });
 	langGrammar.addProduction({ factorOp, {{"/"}} });
-	//langGrammar.addProduction({ unary, {unaryOp, unary} });
-	//langGrammar.addProduction({ unary, {primary} });
-	//langGrammar.addProduction({ unaryOp, {{"-"}}});
-	//langGrammar.addProduction({ unaryOp, {{"!"}} });
+
+	langGrammar.addProduction({ unary, {unaryOp, unary} });
+	langGrammar.addProduction({ unary, {call} });
+	langGrammar.addProduction({ unaryOp, {{"-"}}});
+	langGrammar.addProduction({ unaryOp, {{"!"}} });
 
 	langGrammar.addProduction({ call, {primary, {"("}, arguments, {")"}} });
 	langGrammar.addProduction({ call, {primary} });
@@ -880,7 +923,7 @@ int main()
 	langGrammar.addProduction({ lit, {{"Number"}} });
 	langGrammar.addProduction({ lit, {{"String"}} });
 	langGrammar.addProduction({ identifier, {{"Identifier"}} });
-	//langGrammar.addProduction({ lit, {{"Bool"}} });
+	langGrammar.addProduction({ lit, {{"Bool"}} });
 
 	/*
 	S -> N + N
@@ -907,6 +950,14 @@ int main()
 	peg.addSubstitution("{", "LeftCurly");
 	peg.addSubstitution("}", "RightCurly");
 	peg.addSubstitution(",", "Comma");
+	peg.addSubstitution("&&", "AndAnd");
+	peg.addSubstitution("||", "OrOr");
+	peg.addSubstitution("==", "EqualEqual");
+	peg.addSubstitution("!=", "NotEqual");
+	peg.addSubstitution(">", "GreaterThan");
+	peg.addSubstitution(">=", "GreaterThanEqual");
+	peg.addSubstitution("<", "LessThan");
+	peg.addSubstitution("<=", "LessThanEqual");
 	peg.generateTables();
 	std::cin.get();
 	peg.generateParser(PARSER_LOCATION);
