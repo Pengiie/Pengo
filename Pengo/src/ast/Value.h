@@ -11,6 +11,7 @@ enum class ValueType
 {
 	Integer,
 	String,
+	Bool,
 	Function,
 	Null
 };
@@ -20,7 +21,7 @@ enum class ValueType
 struct Value
 {
 	ValueType type = ValueType::Null;
-	std::variant<int, std::string, 
+	std::variant<int, std::string, bool,
 		Function*> val;
 };
 #pragma warning( pop )

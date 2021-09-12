@@ -4,6 +4,11 @@
 
 enum class TokenType
 {
+	If,
+	ElseIf,
+	Else,
+	While,
+
 	Bang,
 	Plus,
 	Minus,
@@ -21,6 +26,16 @@ enum class TokenType
 	String,
 	Number,
 	Bool,
+
+	AndAnd,
+	OrOr,
+
+	EqualEqual,
+	NotEqual,
+	GreaterThan,
+	LessThan,
+	GreaterThanEqual,
+	LessThanEqual,
 
 	Semicolon,
 

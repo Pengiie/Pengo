@@ -4,8 +4,12 @@
 #include <unordered_map>
 
 const std::unordered_map<std::string, TokenType> keywords = {
-	//{"print", TokenType::Print},
-	//{"var", TokenType::Var}
+	{"true", TokenType::Bool},
+	{"false", TokenType::Bool},
+	{"if", TokenType::If},
+	{"elif", TokenType::ElseIf},
+	{"else", TokenType::Else},
+	{"while", TokenType::While}
 };
 
 Tokenizer::Tokenizer(const std::string& source) : m_source(source)
@@ -32,18 +36,20 @@ void Tokenizer::nextToken()
 	case '\t': break;
 	case '\r': break;
 	case '\n': m_line++; m_lineCurrent = 0; break;
-	case '!': addToken(TokenType::Bang); break;
 	case '+': addToken(TokenType::Plus); break;
 	case '-': addToken(TokenType::Minus); break;
 	case '*': addToken(TokenType::Asterisk); break;
 	case '/': addToken(TokenType::Slash); break;
-	case '=': addToken(TokenType::Equal); break;
 	case '(': addToken(TokenType::LeftParen); break;
 	case ')': addToken(TokenType::RightParen); break;
 	case '{': addToken(TokenType::LeftCurly); break;
 	case '}': addToken(TokenType::RightCurly); break;
 	case ',': addToken(TokenType::Comma); break;
 	case ';': addToken(TokenType::Semicolon); break;
+	case '=': if (match('=')) addToken(TokenType::EqualEqual); else addToken(TokenType::Equal); break;
+	case '!': if (match('=')) addToken(TokenType::NotEqual); else addToken(TokenType::Bang); break;
+	case '>': if (match('=')) addToken(TokenType::GreaterThanEqual); else addToken(TokenType::GreaterThan); break;
+	case '<': if (match('=')) addToken(TokenType::LessThanEqual); else addToken(TokenType::LessThan); break;
 	case '"': tokenizeString(); break;
 	default:
 		if (isNumeric(next))

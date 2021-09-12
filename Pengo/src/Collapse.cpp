@@ -1,5 +1,6 @@
 #include "Collapse.h"
 #include <stack>
+#include <queue>
 #include <type_traits>
 
 std::vector<std::unique_ptr<Statement>> collapseParseTree(const Node* root)
@@ -12,17 +13,43 @@ static std::vector<std::unique_ptr<Statement>> deriveStatements(const Node* root
 	std::vector<std::unique_ptr<Statement>> statements;
 	std::stack<const Node*> stack;
 	stack.push(root);
+	bool lastWasIf = false;
 	while (!stack.empty())
 	{
 		const Node* next = stack.top();
 		stack.pop();
 		if (next->type == NodeType::Block)
-			statements.push_back(std::move(deriveStatement(*next)));
+		{
+			std::unique_ptr<Statement> stmt = std::move(deriveStatement(*next));
+			bool tLastWas = lastWasIf;
+			lastWasIf = stmt->type == StatementType::If || stmt->type == StatementType::ElseIf;
+			if (stmt->type == StatementType::ElseIf || stmt->type == StatementType::Else)
+			{
+				if (tLastWas)
+				{
+					IfStatement* currentIf = (IfStatement*)statements[statements.size() - 1].get();
+					while (currentIf->hasElse && currentIf->elze->type == StatementType::ElseIf)
+						currentIf = (IfStatement*)currentIf->elze.get();
+					currentIf->elze = std::move(stmt);
+					currentIf->hasElse = true;
+				}
+				else
+				{
+					// DISPLAY ERROR
+				}
+			}
+			else statements.push_back(std::move(stmt));
+		}
 		else
+		{
+			std::vector<Node*> tChildren;
 			for (const Node& child : next->children)
-				stack.push(&child);
+				tChildren.push_back((Node*) &child);
+			std::reverse(tChildren.begin(), tChildren.end());
+			for (Node* child : tChildren)
+				stack.push(child);
+		}
 	}
-	std::reverse(statements.begin(), statements.end());
 	return statements;
 }
 
@@ -30,6 +57,41 @@ static std::unique_ptr<Statement> deriveStatement(const Node& root)
 {
 	switch (root.type)
 	{
+	case NodeType::WhileStatement:
+	{
+		WhileStatement whileStatement;
+		whileStatement.condition = deriveExpression(root.children[0]);
+		whileStatement.body = deriveStatement(root.children[1]);
+		return std::make_unique<WhileStatement>(std::move(whileStatement));
+	}
+	break;
+	case NodeType::IfStatement:
+	{
+		IfStatement ifStatement;
+		ifStatement.condition = deriveExpression(root.children[0]);
+		ifStatement.body = deriveStatement(root.children[1]);
+		ifStatement.hasElse = false;
+		return std::make_unique<IfStatement>(std::move(ifStatement));
+	}
+	break;
+	case NodeType::ElseIfStatement:
+	{
+		IfStatement ifStatement;
+		ifStatement.condition = deriveExpression(root.children[0]);
+		ifStatement.body = deriveStatement(root.children[1]);
+		ifStatement.hasElse = false;
+		ifStatement.type = StatementType::ElseIf;
+		return std::make_unique<IfStatement>(std::move(ifStatement));
+	}
+	break;
+	case NodeType::ElseStatement:
+	{
+		BlockStatement elseStatement;
+		elseStatement.statements = deriveStatements(&root.children[0]);
+		elseStatement.type = StatementType::Else;
+		return std::make_unique<BlockStatement>(std::move(elseStatement));
+	}
+	break;
 	case NodeType::Block:
 	{
 		if (root.children[0].type == NodeType::Statement)
@@ -41,6 +103,10 @@ static std::unique_ptr<Statement> deriveStatement(const Node& root)
 			BlockStatement blockStatement;
 			blockStatement.statements = deriveStatements(&root.children[0]);
 			return std::make_unique<BlockStatement>(std::move(blockStatement));
+		}
+		else
+		{
+			return deriveStatement(root.children[0]);
 		}
 	}
 	break;
@@ -73,6 +139,26 @@ static std::unique_ptr<Expression> deriveExpression(const Node& root)
 {
 	switch (root.type)
 	{
+	case NodeType::Logical:
+		if (root.children.size() == 3)
+		{
+			LogicalExpression exp;
+			exp.left = deriveExpression(root.children[0]);
+			exp.op = deriveToken(root.children[1]);
+			exp.right = deriveExpression(root.children[2]);
+			return std::make_unique<LogicalExpression>(std::move(exp));
+		}
+		break;
+	case NodeType::Conditional:
+		if (root.children.size() == 3)
+		{
+			ConditionalExpression exp;
+			exp.left = deriveExpression(root.children[0]);
+			exp.op = deriveToken(root.children[1]);
+			exp.right = deriveExpression(root.children[2]);
+			return std::make_unique<ConditionalExpression>(std::move(exp));
+		}
+		break;
 	case NodeType::Call:
 		if (root.children.size() == 2) {
 			CallExpression callExp;
@@ -91,6 +177,15 @@ static std::unique_ptr<Expression> deriveExpression(const Node& root)
 			}
 			std::reverse(callExp.args.begin(), callExp.args.end());
 			return std::make_unique<CallExpression>(std::move(callExp));
+		}
+		break;
+	case NodeType::Unary:
+		if (root.children.size() == 2)
+		{
+			UnaryExpression exp;
+			exp.op = deriveToken(root.children[0]);
+			exp.exp = deriveExpression(root.children[1]);
+			return std::make_unique<UnaryExpression>(std::move(exp));
 		}
 		break;
 	case NodeType::Term:

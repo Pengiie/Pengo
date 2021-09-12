@@ -34,11 +34,16 @@ private:
 
 	Value evaluate(const std::unique_ptr<Expression>& expression);
 
+	Value visitLogical(LogicalExpression* expression);
+	Value visitConditional(ConditionalExpression* expression);
+	Value visitUnary(UnaryExpression* expression);
 	Value visitCall(CallExpression* expression);
 	Value visitBinary(BinaryExpression* expression);
 	Value visitLiteral(LiteralExpression* expression);
 	Value visitVar(VarExpression* expression);
 
+	void visitWhile(WhileStatement* statement);
+	void visitIf(IfStatement* statement);
 	void visitBlock(BlockStatement* statement);
 	void visitExpression(ExpressionStatement* statement);
 	void visitPrint(PrintStatement* statement);
