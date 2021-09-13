@@ -73,7 +73,7 @@ struct FuncDeclareStatement : public Statement
 
 	Token name;
 	std::vector<Token> params;
-	std::unique_ptr<Statement> body;
+	std::shared_ptr<Statement> body;
 
 	inline void accept(Statement::Visitor& visitor) { visitor.visitFuncDeclare(this); }
 };

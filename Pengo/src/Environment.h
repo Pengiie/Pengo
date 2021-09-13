@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <iostream>
 
+#include <memory>
+
 enum class EnvironmentType
 {
 	Global,
@@ -17,9 +19,15 @@ struct Environment
 {
 	EnvironmentType type = EnvironmentType::Generic;
 	std::unordered_map<std::string, Value> m_variables;
+	std::unordered_map<std::string, std::shared_ptr<Function>> m_functions;
 
 	bool stop = false;
 	Value returnVal; // Used only for functions, too lazy to create a whole OOP environment its literally 11 pm lmao
+
+	~Environment()
+	{
+		
+	}
 
 	bool hasVariable(const std::string& name) 
 	{

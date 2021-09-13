@@ -24,12 +24,12 @@ struct Function
 
 struct UserFunction : public Function
 {
-	UserFunction(int args, std::vector<std::string> params, std::unique_ptr<Statement> body) :
+	UserFunction(int args, std::vector<std::string> params, std::shared_ptr<Statement> body) :
 		body(std::move(body)),
 		params(params)
 	{ builtIn = false; this->args = args; }
 	std::vector<std::string> params;
-	std::unique_ptr<Statement> body;
+	std::shared_ptr<Statement> body;
 	Value call(Interpreter& interpreter, std::vector<Value> values);
 };
 

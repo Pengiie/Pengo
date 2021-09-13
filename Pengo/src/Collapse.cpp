@@ -83,7 +83,7 @@ static std::unique_ptr<Statement> deriveStatement(const Node& root)
 					stack.push(&child);
 		}
 		std::reverse(funcStatement.params.begin(), funcStatement.params.end());
-		funcStatement.body = deriveStatement(root.children[2]);
+		funcStatement.body = std::move(deriveStatement(root.children[2]));
 		((BlockStatement*)funcStatement.body.get())->envType = EnvironmentType::Function;
 		return std::make_unique<FuncDeclareStatement>(std::move(funcStatement));
 	}

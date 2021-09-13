@@ -86,7 +86,10 @@ int main(int argc, char* args[])
 		std::ifstream file(path);
 
 		if (!file.is_open())
-			throw std::runtime_error(std::string("Couldn't open file ") + path);
+		{
+			std::cout << path << " does not exist!" << std::endl;
+			exit(-1);
+		}
 		std::stringstream stream;
 		stream << file.rdbuf();
 

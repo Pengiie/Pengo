@@ -929,7 +929,7 @@ int main()
 	langGrammar.addProduction({ unaryOp, {{"-"}}});
 	langGrammar.addProduction({ unaryOp, {{"!"}} });
 
-	langGrammar.addProduction({ call, {primary, {"("}, arguments, {")"}} });
+	langGrammar.addProduction({ call, {call, {"("}, arguments, {")"}} });
 	langGrammar.addProduction({ call, {primary} });
 	langGrammar.addProduction({ arguments, {} });
 	langGrammar.addProduction({ arguments, {expression, argRecurse} });

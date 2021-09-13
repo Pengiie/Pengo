@@ -11,12 +11,12 @@ Interpreter::Interpreter(std::vector<std::unique_ptr<Statement>> statements)
 {
 	m_statements = std::move(statements);
 
-	m_functions[FUN_PRINT] = new Print();
-	m_functions[FUN_PRINTLN] = new PrintLn();
-	m_functions[FUN_INPUT] = new Input();
-	m_functions[FUN_TOINT] = new ToInt();
-	m_functions[FUN_TOFLOAT] = new ToFloat();
-	m_functions[FUN_RANDOM] = new Random();
+	m_globalEnvironment.m_functions[FUN_PRINT] = std::make_shared<Print>(Print());
+	m_globalEnvironment.m_functions[FUN_PRINTLN] = std::make_shared<PrintLn>(PrintLn());
+	m_globalEnvironment.m_functions[FUN_INPUT] = std::make_shared<Input>(Input());
+	m_globalEnvironment.m_functions[FUN_TOINT] = std::make_shared<ToInt>(ToInt());
+	m_globalEnvironment.m_functions[FUN_TOFLOAT] = std::make_shared<ToFloat>(ToFloat());
+	m_globalEnvironment.m_functions[FUN_RANDOM] = std::make_shared<Random>(Random());
 
 	m_random.seed(time(NULL));
 	m_globalEnvironment.type = EnvironmentType::Global;
@@ -24,8 +24,7 @@ Interpreter::Interpreter(std::vector<std::unique_ptr<Statement>> statements)
 
 Interpreter::~Interpreter()
 {
-	for (auto& func : m_functions)
-		delete func.second;
+	
 }
 
 void Interpreter::interpret()
@@ -59,7 +58,11 @@ void Interpreter::visitFuncDeclare(FuncDeclareStatement* statement)
 	std::vector<std::string> params;
 	for (Token& token : statement->params)
 		params.push_back(token.token);
-	m_functions[statement->name.token] = new UserFunction(statement->params.size(), params, std::move(statement->body));
+	std::shared_ptr<UserFunction> func = std::make_shared<UserFunction>(UserFunction(statement->params.size(), params, statement->body));
+	if (m_envStack.size() == 0)
+		m_globalEnvironment.m_functions[statement->name.token] = func;
+	else
+		m_envStack.top().m_functions[statement->name.token] = func;
 }
 
 void Interpreter::visitWhile(WhileStatement* statement)
@@ -169,6 +172,7 @@ Value Interpreter::visitConditional(ConditionalExpression* expression)
 		switch (left.type)
 		{
 		case ValueType::Integer: return { ValueType::Bool, std::get<int>(left.val) == std::get<int>(right.val) };
+		case ValueType::Float: return { ValueType::Bool, std::get<float>(left.val) == std::get<float>(right.val) };
 		case ValueType::Bool: return { ValueType::Bool, std::get<bool>(left.val) == std::get<bool>(right.val) };
 		case ValueType::String: return { ValueType::Bool, std::get<std::string>(left.val) == std::get<std::string>(right.val) };
 		}
@@ -213,7 +217,12 @@ Value Interpreter::visitUnary(UnaryExpression* expression)
 	Value val = evaluate(expression->exp);
 	switch (type)
 	{
-	case TokenType::Minus: return { ValueType::Integer, -std::get<int>(val.val) };
+	case TokenType::Minus: {
+		if(val.type == ValueType::Integer)
+			return { ValueType::Integer, -std::get<int>(val.val) };
+		if (val.type == ValueType::Float)
+			return { ValueType::Float, -std::get<int>(val.val) };
+	}
 	case TokenType::Bang: return { ValueType::Bool, !std::get<bool>(val.val) };
 	}
 }
@@ -224,7 +233,7 @@ Value Interpreter::visitCall(CallExpression* expression)
 	std::vector<Value> values;
 	for (std::unique_ptr<Expression>& exp : expression->args)
 		values.push_back(evaluate(exp));
-	return std::get<Function*>(function.val)->call(*this, values);
+	return std::get<std::shared_ptr<Function>>(function.val)->call(*this, values);
 }
 
 Value Interpreter::visitBinary(BinaryExpression* expression)
@@ -240,10 +249,23 @@ Value Interpreter::visitBinary(BinaryExpression* expression)
 		}
 		else {
 			Value val;
-			bool doFloat = left.type == ValueType::Float || right.type == ValueType::Float;
-			val.type = (doFloat ? ValueType::Float : ValueType::Integer);
-			val.val = (doFloat ? std::get<float>(left.val) : std::get<int>(left.val)) + 
-				(doFloat ? std::get<float>(right.val) : std::get<int>(right.val));
+			bool doLeftFloat = left.type == ValueType::Float, doRightFloat = right.type == ValueType::Float;
+			bool floatBoth = doLeftFloat || doRightFloat;
+			val.type = floatBoth ? ValueType::Float : ValueType::Integer;
+			{
+				if (floatBoth)
+				{
+					float result = (doLeftFloat ? std::get<float>(left.val) : std::get<int>(left.val)) +
+						(doRightFloat ? std::get<float>(right.val) : std::get<int>(right.val));
+					val.val = result;
+				}
+				else
+				{
+					int result = (doLeftFloat ? std::get<float>(left.val) : std::get<int>(left.val)) +
+						(doRightFloat ? std::get<float>(right.val) : std::get<int>(right.val));
+					val.val = result;
+				}
+			}
 			return val;
 		}
 	}
@@ -253,16 +275,59 @@ Value Interpreter::visitBinary(BinaryExpression* expression)
 			(right.type == ValueType::Integer || right.type == ValueType::Float))
 		{
 			Value val;
-			bool doFloat = left.type == ValueType::Float || right.type == ValueType::Float;
-			val.type = (doFloat ? ValueType::Float : ValueType::Integer);
+			bool doLeftFloat = left.type == ValueType::Float, doRightFloat = right.type == ValueType::Float;
+			bool floatBoth = doLeftFloat || doRightFloat;
+			val.type = floatBoth ? ValueType::Float : ValueType::Integer;
 			switch (op.type)
 			{
-			case TokenType::Minus: val.val = (doFloat ? std::get<float>(left.val) : std::get<int>(left.val)) - 
-				(doFloat ? std::get<float>(right.val) : std::get<int>(right.val)); break;
-			case TokenType::Asterisk: val.val = (doFloat ? std::get<float>(left.val) : std::get<int>(left.val)) * 
-				(doFloat ? std::get<float>(right.val) : std::get<int>(right.val)); break;
-			case TokenType::Slash: val.val = (doFloat ? std::get<float>(left.val) : std::get<int>(left.val)) / 
-				(doFloat ? std::get<float>(right.val) : std::get<int>(right.val)); break;
+			case TokenType::Minus: 
+			{
+				if (floatBoth)
+				{
+					float result = (doLeftFloat ? std::get<float>(left.val) : std::get<int>(left.val)) -
+						(doRightFloat ? std::get<float>(right.val) : std::get<int>(right.val));
+					val.val = result;
+				}
+				else
+				{
+					int result = (doLeftFloat ? std::get<float>(left.val) : std::get<int>(left.val)) -
+						(doRightFloat ? std::get<float>(right.val) : std::get<int>(right.val));
+					val.val = result;
+				}
+			}
+			break;
+			case TokenType::Asterisk: 
+			{
+				if (floatBoth)
+				{
+					float result = (doLeftFloat ? std::get<float>(left.val) : std::get<int>(left.val)) *
+						(doRightFloat ? std::get<float>(right.val) : std::get<int>(right.val));
+					val.val = result;
+				}
+				else
+				{
+					int result = (doLeftFloat ? std::get<float>(left.val) : std::get<int>(left.val)) *
+						(doRightFloat ? std::get<float>(right.val) : std::get<int>(right.val));
+					val.val = result;
+				}
+			}
+									break;
+			case TokenType::Slash: 
+			{
+				if (floatBoth)
+				{
+					float result = (doLeftFloat ? std::get<float>(left.val) : std::get<int>(left.val)) /
+						(doRightFloat ? std::get<float>(right.val) : std::get<int>(right.val));
+					val.val = result;
+				}
+				else
+				{
+					int result = (doLeftFloat ? std::get<float>(left.val) : std::get<int>(left.val)) /
+						(doRightFloat ? std::get<float>(right.val) : std::get<int>(right.val));
+					val.val = result;
+				}
+			}
+			break;
 			}
 			return val;
 		}
@@ -310,19 +375,17 @@ Value Interpreter::toString(const Value& value)
 
 Value Interpreter::findVariable(const Token& name)
 {
-	for(int i = m_envStack.size() - 1; i >= 0; i--)
-		if (m_envStack.begin()[i].hasVariable(name.token))
-			return m_envStack.begin()[i].getVariable(name);
-
+	for (int i = m_envStack.size() - 1; i >= 0; i--)
+	{
+		auto& env = m_envStack.begin()[i];
+		if (env.hasVariable(name.token))
+			return env.getVariable(name);
+		else if (env.m_functions.find(name.token) != env.m_functions.end())
+			return { ValueType::Function, env.m_functions[name.token] };
+	}
 	if(m_globalEnvironment.hasVariable(name.token))
 		return m_globalEnvironment.getVariable(name);
-
-	if (m_functions.find(name.token) != m_functions.end())
-	{
-		Value val;
-		val.type = ValueType::Function;
-		val.val = m_functions.at(name.token);
-		return val;
-	}
+	else if (m_globalEnvironment.m_functions.find(name.token) != m_globalEnvironment.m_functions.end())
+		return { ValueType::Function, m_globalEnvironment.m_functions[name.token] };
 	return m_globalEnvironment.getVariable(name);
 }

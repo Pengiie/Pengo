@@ -23,6 +23,6 @@ struct Value
 {
 	ValueType type = ValueType::Null;
 	std::variant<int, float, std::string, bool,
-		Function*> val;
+		std::shared_ptr<Function>> val;
 };
 #pragma warning( pop )

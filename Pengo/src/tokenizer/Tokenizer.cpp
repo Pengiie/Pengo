@@ -41,7 +41,7 @@ void Tokenizer::nextToken()
 	{
 	case ' ': break;
 	case '\t': break;
-	case '\r': break;
+	case '\r':
 	case '\n': m_line++; m_lineCurrent = 0; break;
 	case '+': addToken(TokenType::Plus); break;
 	case '-': addToken(TokenType::Minus); break;
@@ -107,7 +107,6 @@ void Tokenizer::tokenizeString()
 
 void Tokenizer::tokenizeIdentifier()
 {
-	advance();
 	while (isAlpha(peek()) || isNumeric(peek())) advance();
 
 	std::string token = m_source.substr(m_start, m_current - m_start);

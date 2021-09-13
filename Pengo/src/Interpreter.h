@@ -23,13 +23,12 @@ public:
 
 	Value toString(const Value& value);
 
-	inline const std::unordered_map<std::string, Function*>& getFunctions() const { return m_functions; }
+	//inline const std::unordered_map<std::string, Function*>& getFunctions() const { return m_functions; }
 	inline std::default_random_engine& getRandom() { return m_random;  }
 	inline std::iterable_stack<Environment>& getEnvStack() { return m_envStack; }
 private:
 	std::vector<std::unique_ptr<Statement>> m_statements;
 	Environment m_globalEnvironment;
-	std::unordered_map<std::string, Function*> m_functions;
 	std::iterable_stack<Environment> m_envStack;
 	std::default_random_engine m_random;
 
