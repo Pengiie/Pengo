@@ -4,10 +4,15 @@
 
 enum class TokenType
 {
+	Func,
 	If,
 	ElseIf,
 	Else,
 	While,
+
+	Return,
+	Break,
+	Continue,
 
 	Bang,
 	Plus,
@@ -24,7 +29,8 @@ enum class TokenType
 
 	Identifier,
 	String,
-	Number,
+	Integer,
+	Float,
 	Bool,
 
 	AndAnd,

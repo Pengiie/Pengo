@@ -8,10 +8,12 @@
 #define FUN_PRINTLN "println"
 #define FUN_INPUT "input"
 #define FUN_TOINT "int"
+#define FUN_TOFLOAT "float"
 #define FUN_RANDOM "random"
 
 class Interpreter;
 struct Value;
+struct Statement;
 struct Function
 {
 	int args = 0;
@@ -20,10 +22,14 @@ struct Function
 	virtual Value call(Interpreter& interpreter, std::vector<Value> values) = 0;
 };
 
-
 struct UserFunction : public Function
 {
-	UserFunction() { builtIn = false; }
+	UserFunction(int args, std::vector<std::string> params, std::unique_ptr<Statement> body) :
+		body(std::move(body)),
+		params(params)
+	{ builtIn = false; this->args = args; }
+	std::vector<std::string> params;
+	std::unique_ptr<Statement> body;
 	Value call(Interpreter& interpreter, std::vector<Value> values);
 };
 
@@ -31,11 +37,6 @@ enum class BuiltInType
 {
 	PRINT,
 	PRINTLN
-};
-
-struct BuiltInFunction : public Function
-{
-
 };
 
 // Built in functions
@@ -63,6 +64,13 @@ struct Input : public Function
 struct ToInt : public Function
 {
 	ToInt() { args = 1; }
+
+	Value call(Interpreter& interpreter, std::vector<Value> values);
+};
+
+struct ToFloat : public Function
+{
+	ToFloat() { args = 1; }
 
 	Value call(Interpreter& interpreter, std::vector<Value> values);
 };

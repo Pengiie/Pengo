@@ -15,9 +15,11 @@ Interpreter::Interpreter(std::vector<std::unique_ptr<Statement>> statements)
 	m_functions[FUN_PRINTLN] = new PrintLn();
 	m_functions[FUN_INPUT] = new Input();
 	m_functions[FUN_TOINT] = new ToInt();
+	m_functions[FUN_TOFLOAT] = new ToFloat();
 	m_functions[FUN_RANDOM] = new Random();
 
 	m_random.seed(time(NULL));
+	m_globalEnvironment.type = EnvironmentType::Global;
 }
 
 Interpreter::~Interpreter()
@@ -35,6 +37,29 @@ void Interpreter::interpret()
 Value Interpreter::evaluate(const std::unique_ptr<Expression>& expression)
 {
 	return expression->accept(*this);
+}
+
+void Interpreter::visitReturn(ReturnStatement* statement)
+{
+	for (int i = m_envStack.size() - 1; i >= 0; i--)
+		if (m_envStack.begin()[i].type == EnvironmentType::Function)
+		{
+			m_envStack.begin()[i].stop = true;
+			if (statement->hasExp)
+				m_envStack.begin()[i].returnVal = evaluate(statement->exp);
+			else
+				m_envStack.begin()[i].returnVal = {};
+			return;
+		}
+	exit(0);
+}
+
+void Interpreter::visitFuncDeclare(FuncDeclareStatement* statement)
+{
+	std::vector<std::string> params;
+	for (Token& token : statement->params)
+		params.push_back(token.token);
+	m_functions[statement->name.token] = new UserFunction(statement->params.size(), params, std::move(statement->body));
 }
 
 void Interpreter::visitWhile(WhileStatement* statement)
@@ -69,7 +94,7 @@ void Interpreter::visitIf(IfStatement* statement)
 
 void Interpreter::visitBlock(BlockStatement* statement)
 {
-	m_envStack.push({});
+	m_envStack.push({statement->envType});
 	for (std::unique_ptr<Statement>& s : statement->statements)
 		s->accept(*this);
 	m_envStack.pop();
@@ -215,22 +240,29 @@ Value Interpreter::visitBinary(BinaryExpression* expression)
 		}
 		else {
 			Value val;
-			val.type = ValueType::Integer;
-			val.val = std::get<int>(left.val) + std::get<int>(right.val);
+			bool doFloat = left.type == ValueType::Float || right.type == ValueType::Float;
+			val.type = (doFloat ? ValueType::Float : ValueType::Integer);
+			val.val = (doFloat ? std::get<float>(left.val) : std::get<int>(left.val)) + 
+				(doFloat ? std::get<float>(right.val) : std::get<int>(right.val));
 			return val;
 		}
 	}
 	else
 	{
-		if (left.type == ValueType::Integer && right.type == ValueType::Integer)
+		if ((left.type == ValueType::Integer || left.type == ValueType::Float) &&
+			(right.type == ValueType::Integer || right.type == ValueType::Float))
 		{
 			Value val;
-			val.type = ValueType::Integer;
+			bool doFloat = left.type == ValueType::Float || right.type == ValueType::Float;
+			val.type = (doFloat ? ValueType::Float : ValueType::Integer);
 			switch (op.type)
 			{
-			case TokenType::Minus: val.val = std::get<int>(left.val) - std::get<int>(right.val); break;
-			case TokenType::Asterisk: val.val = std::get<int>(left.val) * std::get<int>(right.val); break;
-			case TokenType::Slash: val.val = std::get<int>(left.val) / std::get<int>(right.val); break;
+			case TokenType::Minus: val.val = (doFloat ? std::get<float>(left.val) : std::get<int>(left.val)) - 
+				(doFloat ? std::get<float>(right.val) : std::get<int>(right.val)); break;
+			case TokenType::Asterisk: val.val = (doFloat ? std::get<float>(left.val) : std::get<int>(left.val)) * 
+				(doFloat ? std::get<float>(right.val) : std::get<int>(right.val)); break;
+			case TokenType::Slash: val.val = (doFloat ? std::get<float>(left.val) : std::get<int>(left.val)) / 
+				(doFloat ? std::get<float>(right.val) : std::get<int>(right.val)); break;
 			}
 			return val;
 		}
@@ -248,7 +280,8 @@ Value Interpreter::visitLiteral(LiteralExpression* expression)
 	Token& val = expression->value;
 	switch (val.type)
 	{
-	case TokenType::Number: return { ValueType::Integer, std::stoi(val.token) };
+	case TokenType::Integer: return { ValueType::Integer, std::stoi(val.token) };
+	case TokenType::Float: return { ValueType::Float, std::stof(val.token) };
 	case TokenType::String: return { ValueType::String, val.token };
 	case TokenType::Bool: return { ValueType::Bool, val.token == "true" ? true : false };
 	}
@@ -267,8 +300,12 @@ Value Interpreter::toString(const Value& value)
 		return value;
 	if (value.type == ValueType::Integer)
 		return { ValueType::String, std::to_string(std::get<int>(value.val)) };
+	if(value.type == ValueType::Float)
+		return { ValueType::String, std::to_string(std::get<float>(value.val)) };
 	if (value.type == ValueType::Bool)
 		return { ValueType::String, std::get<bool>(value.val) ? std::string("true") : std::string("false") };
+	if (value.type == ValueType::Null)
+		return { ValueType::String, "Null"};
 }
 
 Value Interpreter::findVariable(const Token& name)

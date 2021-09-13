@@ -2,14 +2,21 @@
 
 #include "Tokenizer.h"
 #include <unordered_map>
+#include <iostream>
 
 const std::unordered_map<std::string, TokenType> keywords = {
 	{"true", TokenType::Bool},
 	{"false", TokenType::Bool},
+
 	{"if", TokenType::If},
 	{"elif", TokenType::ElseIf},
 	{"else", TokenType::Else},
-	{"while", TokenType::While}
+	{"while", TokenType::While},
+	{"func", TokenType::Func},
+
+	{"return", TokenType::Return},
+	{"break", TokenType::Break},
+	{"continue", TokenType::Continue},
 };
 
 Tokenizer::Tokenizer(const std::string& source) : m_source(source)
@@ -39,7 +46,8 @@ void Tokenizer::nextToken()
 	case '+': addToken(TokenType::Plus); break;
 	case '-': addToken(TokenType::Minus); break;
 	case '*': addToken(TokenType::Asterisk); break;
-	case '/': addToken(TokenType::Slash); break;
+	case '/': if (match('/')) { while (!match('\n') && !isAtEnd()) advance(); break; }
+			else addToken(TokenType::Slash); break;
 	case '(': addToken(TokenType::LeftParen); break;
 	case ')': addToken(TokenType::RightParen); break;
 	case '{': addToken(TokenType::LeftCurly); break;
@@ -62,6 +70,7 @@ void Tokenizer::nextToken()
 			tokenizeIdentifier();
 			break;
 		}
+		std::cout << "Could not parse at line " << m_line << " position " << m_lineCurrent << "!" << std::endl;
 		exit(-51);
 	}
 }
@@ -69,8 +78,12 @@ void Tokenizer::nextToken()
 void Tokenizer::tokenizeNumber()
 {
 	while (isNumeric(peek())) advance();
-
-	addToken(TokenType::Number);
+	if (match('.'))
+	{
+		while (isNumeric(peek())) advance();
+		addToken(TokenType::Float);
+	}
+	else addToken(TokenType::Integer);
 }
 
 void Tokenizer::tokenizeString()
@@ -84,6 +97,11 @@ void Tokenizer::tokenizeString()
 	}
 	advance();
 	std::string token = m_source.substr(m_start+1, (m_current - m_start)-2);
+	size_t pos;
+	while ((pos = token.find('\\')) != std::string::npos) {
+		if (token.size() >= pos+1 && token.substr(pos, 2) == "\\n")
+			token.replace(pos, 2, "\n");
+	}
 	addToken(TokenType::String, token);
 }
 

@@ -777,6 +777,11 @@ int main()
 	printStatement = 'print' expression;
 	varDeclare = 'var' 'Identifier' '=' expression;
 
+	parameters = ;
+	parameters = identifier, parameterRecures;
+	parameters = ',', identifier, parameters;
+	parameters = ;
+
 	block = '{' statements '}';
 	block = statement, ';';
 
@@ -828,6 +833,11 @@ int main()
 	Symbol elseifStatement = { "ElseIfStatement", SymbolType::NONTERMINAL, true };
 	Symbol elseStatement = { "ElseStatement", SymbolType::NONTERMINAL, true };
 	Symbol varDeclareStatement = { "VarDeclareStatement", SymbolType::NONTERMINAL, true };
+	Symbol returnStatement = { "ReturnStatement", SymbolType::NONTERMINAL, true };
+
+	Symbol functionDeclareStatement = { "FunctionDeclareStatement", SymbolType::NONTERMINAL, true };
+	Symbol parameters = { "Parameters", SymbolType::NONTERMINAL, true };
+	Symbol paramRecurse = { "ParamRecurse", SymbolType::NONTERMINAL, true };
 
 	Symbol expression = { "Expression", SymbolType::NONTERMINAL, true };
 
@@ -866,12 +876,22 @@ int main()
 	langGrammar.addProduction({ block, {elseifStatement} });
 	langGrammar.addProduction({ block, {elseStatement} });
 	langGrammar.addProduction({ block, {whileStatement} });
+	langGrammar.addProduction({ block, {functionDeclareStatement} });
 
 	langGrammar.addProduction({ statement, {expression} });
 	//langGrammar.addProduction({ statement, {printStatement} });
 	langGrammar.addProduction({ statement, {varDeclareStatement} });
+	langGrammar.addProduction({ statement, {returnStatement} });
 
 	//langGrammar.addProduction({ printStatement, {{"Print"}, expression} });
+	langGrammar.addProduction({ functionDeclareStatement, {{"Func"}, identifier, {"("}, parameters, {")"}, block} });
+	langGrammar.addProduction({ parameters, {} });
+	langGrammar.addProduction({ parameters, {identifier, paramRecurse} });
+	langGrammar.addProduction({ paramRecurse, {} });
+	langGrammar.addProduction({ paramRecurse, {{","}, identifier, paramRecurse} });
+
+	langGrammar.addProduction({ returnStatement, {{"Return"}} });
+	langGrammar.addProduction({ returnStatement, {{"Return"}, expression}});
 	langGrammar.addProduction({ varDeclareStatement, {identifier, {"="}, expression} });
 	langGrammar.addProduction({ whileStatement, {{"While"}, {"("}, expression, {")"}, block} });
 	langGrammar.addProduction({ ifStatement, {{"If"}, {"("}, expression, {")"}, block}});
@@ -920,7 +940,8 @@ int main()
 	langGrammar.addProduction({ primary, {grouping} });
 	langGrammar.addProduction({ primary, {lit} });
 	langGrammar.addProduction({ grouping, {{"("}, expression, {")"}} });
-	langGrammar.addProduction({ lit, {{"Number"}} });
+	langGrammar.addProduction({ lit, {{"Integer"}} });
+	langGrammar.addProduction({ lit, {{"Float"}} });
 	langGrammar.addProduction({ lit, {{"String"}} });
 	langGrammar.addProduction({ identifier, {{"Identifier"}} });
 	langGrammar.addProduction({ lit, {{"Bool"}} });

@@ -21,6 +21,10 @@ std::string getType(NodeType type)
 	case NodeType::Block: return "Block";
 	case NodeType::Statement: return "Statement";
 	//case NodeType::PrintStatement: return "PrintStatement";
+	case NodeType::ReturnStatement: return "Return";
+	case NodeType::FunctionDeclareStatement: return "FuncDeclare";
+	case NodeType::Parameters: return "Parameters";
+	case NodeType::ParamRecurse: return "ParamRecurse";
 	case NodeType::WhileStatement: return "While";
 	case NodeType::IfStatement: return "If";
 	case NodeType::ElseIfStatement: return "Elseif";

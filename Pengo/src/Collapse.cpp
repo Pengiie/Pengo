@@ -57,11 +57,43 @@ static std::unique_ptr<Statement> deriveStatement(const Node& root)
 {
 	switch (root.type)
 	{
+	case NodeType::ReturnStatement:
+	{
+		ReturnStatement returnStatement;
+		returnStatement.hasExp = root.children.size() == 1;
+		if(returnStatement.hasExp)
+			returnStatement.exp = deriveExpression(root.children[0]);
+		return std::make_unique<ReturnStatement>(std::move(returnStatement));
+	}
+	break;
+	case NodeType::FunctionDeclareStatement:
+	{
+		FuncDeclareStatement funcStatement;
+		funcStatement.name = deriveToken(root.children[0]);
+		std::stack<const Node*> stack;
+		stack.push(&(root.children[1]));
+		while (!stack.empty())
+		{
+			const Node* next = stack.top();
+			stack.pop();
+			if (next->type == NodeType::Identifier)
+				funcStatement.params.push_back(next->token);
+			else
+				for (const Node& child : next->children)
+					stack.push(&child);
+		}
+		std::reverse(funcStatement.params.begin(), funcStatement.params.end());
+		funcStatement.body = deriveStatement(root.children[2]);
+		((BlockStatement*)funcStatement.body.get())->envType = EnvironmentType::Function;
+		return std::make_unique<FuncDeclareStatement>(std::move(funcStatement));
+	}
+	break;
 	case NodeType::WhileStatement:
 	{
 		WhileStatement whileStatement;
 		whileStatement.condition = deriveExpression(root.children[0]);
 		whileStatement.body = deriveStatement(root.children[1]);
+		((BlockStatement*)whileStatement.body.get())->envType = EnvironmentType::Loop;
 		return std::make_unique<WhileStatement>(std::move(whileStatement));
 	}
 	break;

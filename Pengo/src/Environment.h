@@ -5,9 +5,21 @@
 #include <unordered_map>
 #include <iostream>
 
+enum class EnvironmentType
+{
+	Global,
+	Function,
+	Loop,
+	Generic
+};
+
 struct Environment
 {
+	EnvironmentType type = EnvironmentType::Generic;
 	std::unordered_map<std::string, Value> m_variables;
+
+	bool stop = false;
+	Value returnVal; // Used only for functions, too lazy to create a whole OOP environment its literally 11 pm lmao
 
 	bool hasVariable(const std::string& name) 
 	{

@@ -2,19 +2,24 @@
 
 #include "Expression.h"
 #include "../tokenizer/Token.h"
+#include "../Environment.h"
 
 #include <memory>
 #include <vector>
 
+struct ReturnStatement;
 struct WhileStatement;
 struct IfStatement;
 struct BlockStatement;
 struct ExpressionStatement;
 struct PrintStatement;
 struct VarDeclareStatement;
+struct FuncDeclareStatement;
 
 enum class StatementType
 {
+	Return,
+	FuncDeclare,
 	While,
 	If,
 	ElseIf,
@@ -29,6 +34,8 @@ struct Statement
 	Statement(StatementType type) : type(type) {}
 	struct Visitor
 	{
+		virtual void visitReturn(ReturnStatement* statement) = 0;
+		virtual void visitFuncDeclare(FuncDeclareStatement* statement) = 0;
 		virtual void visitWhile(WhileStatement* statement) = 0;
 		virtual void visitIf(IfStatement* statement) = 0;
 		virtual void visitBlock(BlockStatement* statement) = 0;
@@ -40,6 +47,15 @@ struct Statement
 
 	virtual void accept(Visitor& visitor) = 0;
 };
+struct ReturnStatement : public Statement
+{
+	ReturnStatement() : Statement(StatementType::Return) {}
+
+	std::unique_ptr<Expression> exp;
+	bool hasExp;
+
+	inline void accept(Statement::Visitor& visitor) { visitor.visitReturn(this); }
+};
 
 struct WhileStatement : public Statement
 {
@@ -49,6 +65,17 @@ struct WhileStatement : public Statement
 	std::unique_ptr<Statement> body;
 
 	inline void accept(Statement::Visitor& visitor) { visitor.visitWhile(this); }
+};
+
+struct FuncDeclareStatement : public Statement
+{
+	FuncDeclareStatement() : Statement(StatementType::FuncDeclare) {}
+
+	Token name;
+	std::vector<Token> params;
+	std::unique_ptr<Statement> body;
+
+	inline void accept(Statement::Visitor& visitor) { visitor.visitFuncDeclare(this); }
 };
 
 struct IfStatement : public Statement
@@ -68,6 +95,7 @@ struct BlockStatement : public Statement
 {
 	BlockStatement() : Statement(StatementType::Block) {}
 
+	EnvironmentType envType = EnvironmentType::Generic;
 	std::vector<std::unique_ptr<Statement>> statements;
 
 	inline void accept(Statement::Visitor& visitor) { visitor.visitBlock(this); }

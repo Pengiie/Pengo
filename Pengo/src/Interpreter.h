@@ -25,6 +25,7 @@ public:
 
 	inline const std::unordered_map<std::string, Function*>& getFunctions() const { return m_functions; }
 	inline std::default_random_engine& getRandom() { return m_random;  }
+	inline std::iterable_stack<Environment>& getEnvStack() { return m_envStack; }
 private:
 	std::vector<std::unique_ptr<Statement>> m_statements;
 	Environment m_globalEnvironment;
@@ -42,6 +43,8 @@ private:
 	Value visitLiteral(LiteralExpression* expression);
 	Value visitVar(VarExpression* expression);
 
+	void visitReturn(ReturnStatement* statement);
+	void visitFuncDeclare(FuncDeclareStatement* statement);
 	void visitWhile(WhileStatement* statement);
 	void visitIf(IfStatement* statement);
 	void visitBlock(BlockStatement* statement);
